@@ -43,6 +43,7 @@
 
 #include "ciaa.h"
 #include "digital.h"
+#include "reloj.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -54,10 +55,11 @@
 
 /* === Private variable declarations
  * =========================================================== */
+static bool buzzer;
 
 /* === Private function declarations
  * =========================================================== */
-
+void Alarma_ON(clock_puntero reloj) { buzzer = true; }
 /* === Public variable definitions
  * ============================================================= */
 
@@ -71,7 +73,12 @@
  * ========================================================= */
 int main(void) {
 
+  clock_puntero reloj = ClockCreate(100, Alarma_ON);
   board_puntero board = BoardCreate();
+  //  modo = SIN_CONFIGURAR;
+
+  // SisTick_Init(1000);
+  // DisplayFlashDigits(board->display, 0, 3, 200);
 
   while (true) {
     if (DigitalInputHasActivated(board->accept) == true) {
@@ -80,28 +87,40 @@ int main(void) {
     }
 
     if (DigitalInputHasActivated(board->cancel) == true) {
-      DisplayWriteBCD(board->display, NULL, 0);
-      DisplayRefresh(board->display);
+      // DisplayWriteBCD(board->display, NULL, 0);
+      // DisplayRefresh(board->display);
     }
 
     if (DigitalInputHasActivated(board->set_time) == true) {
-      DisplayWriteBCD(board->display, (uint8_t[]){1, 1, 1, 1}, 4);
-      DisplayRefresh(board->display);
+      // DisplayWriteBCD(board->display, (uint8_t[]){1, 1, 1, 1}, 4);
+      // DisplayRefresh(board->display);
     }
 
     if (DigitalInputHasActivated(board->set_alarm) == true) {
-      DisplayWriteBCD(board->display, (uint8_t[]){2, 2, 2, 2}, 4);
+      // DisplayWriteBCD(board->display, (uint8_t[]){2, 2, 2, 2}, 4);
     }
 
     if (DigitalInputHasActivated(board->decrement) == true) {
-      DisplayWriteBCD(board->display, (uint8_t[]){5, 6, 7, 8}, 4);
+      // DisplayWriteBCD(board->display, (uint8_t[]){5, 6, 7, 8}, 4);
     }
 
     if (DigitalInputHasActivated(board->increment) == true) {
-      DisplayWriteBCD(board->display, (uint8_t[]){9, 9, 9, 9}, 4);
+      // DisplayWriteBCD(board->display, (uint8_t[]){9, 9, 9, 9}, 4);
     }
 
+    // DisplayRefresh(board->display);
+  }
+  void Systick_Handler(void) {
+    static bool last_value = false;
+    bool current_value;
+
     DisplayRefresh(board->display);
+    current_value = ClockNewTick(reloj);
+
+    if (current_value != last_value) {
+      DisplayToggleDot(board->display, 1);
+      last_value = current_value;
+    }
   }
 }
 
