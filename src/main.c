@@ -144,28 +144,37 @@ void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]) {
 }
 
 int main(void) {
+  uint8_t entrada[4];
 
   clock_puntero reloj = ClockCreate(100, Alarma_ON);
   board_puntero board = BoardCreate();
-  modo = SIN_CONFIGURAR;
+  // modo = SIN_CONFIGURAR;
 
-  // SisTick_Init(1000);
-  // DisplayFlashDigits(board->display, 0, 3, 200);
+  SisTick_Init(1000);
+  CambiarModo(SIN_CONFIGURAR, board);
 
   while (true) {
     if (DigitalInputHasActivated(board->accept) == true) {
-      DisplayWriteBCD(board->display, (uint8_t[]){1, 2, 3, 4}, 4);
-      DisplayRefresh(board->display);
+      if (modo == AJUSTANDO_MINUTOS_ACTUAL) {
+        CambiarModo(AJUSTANDO_HORAS_ACTUAL, board);
+      } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
+        ClockSetTime(reloj, entrada, sizeof(entrada));
+        CambiarModo(MOSTRANDO_HORA, board);
+      }
     }
 
     if (DigitalInputHasActivated(board->cancel) == true) {
-      // DisplayWriteBCD(board->display, NULL, 0);
-      // DisplayRefresh(board->display);
+      if (ClockGetTime(reloj, entrada, sizeof(entrada))) {
+        CambiarModo(MOSTRANDO_HORA, board);
+      } else {
+        CambiarModo(SIN_CONFIGURAR, board);
+      }
     }
 
     if (DigitalInputHasActivated(board->set_time) == true) {
-      // DisplayWriteBCD(board->display, (uint8_t[]){1, 1, 1, 1}, 4);
-      // DisplayRefresh(board->display);
+      CambiarModo(AJUSTANDO_MINUTOS_ACTUAL, board);
+      ClockGetTime(reloj, entrada, sizeof(entrada));
+      DisplayWriteBCD(board->display, entrada, sizeof(entrada));
     }
 
     if (DigitalInputHasActivated(board->set_alarm) == true) {
@@ -173,11 +182,21 @@ int main(void) {
     }
 
     if (DigitalInputHasActivated(board->decrement) == true) {
-      // DisplayWriteBCD(board->display, (uint8_t[]){5, 6, 7, 8}, 4);
+      if (modo == AJUSTANDO_MINUTOS_ACTUAL) {
+        entrada[3] = entrada[3] - 1;
+      } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
+        entrada[1] = entrada[1] - 1;
+      }
+      DisplayWriteBCD(board->display, entrada, sizeof(entrada));
     }
 
     if (DigitalInputHasActivated(board->increment) == true) {
-      // DisplayWriteBCD(board->display, (uint8_t[]){9, 9, 9, 9}, 4);
+      if (modo == AJUSTANDO_MINUTOS_ACTUAL) {
+        entrada[3] = entrada[3] + 1;
+      } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
+        entrada[1] = entrada[1] + 1;
+      }
+      DisplayWriteBCD(board->display, entrada, sizeof(entrada));
     }
 
     // DisplayRefresh(board->display);
@@ -185,13 +204,21 @@ int main(void) {
   void Systick_Handler(void) {
     static bool last_value = false;
     bool current_value;
+    uint8_t hora[6];
 
     DisplayRefresh(board->display);
     current_value = ClockNewTick(reloj);
 
     if (current_value != last_value) {
-      DisplayToggleDot(board->display, 1);
       last_value = current_value;
+
+      if (modo <= MOSTRANDO_HORA) {
+        ClockGetTime(reloj, hora, sizeof(hora));
+        DisplayWriteBCD(board->display, hora, sezeof(hora));
+        if (current_value) {
+          DisplayToggleDot(board->display, 1);
+        }
+      }
     }
   }
 }
