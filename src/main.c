@@ -43,6 +43,7 @@
 
 #include "ciaa.h"
 #include "digital.h"
+// #include "pantalla.h"
 #include "reloj.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -68,7 +69,11 @@ static modo_t modo;
 
 /* === Private function declarations
  * =========================================================== */
-void Alarma_ON(clock_puntero reloj) { buzzer = true; }
+void Alarma_ON(clock_puntero reloj) { buzzer = true; };
+// void CambiarModo(modo_t valor);
+void IncrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
+void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
+
 /* === Public variable definitions
  * ============================================================= */
 
@@ -80,6 +85,63 @@ void Alarma_ON(clock_puntero reloj) { buzzer = true; }
 
 /* === Public function implementation
  * ========================================================= */
+void CambiarModo(modo_t valor, board_puntero board) {
+  modo = valor;
+  switch (modo) {
+  case SIN_CONFIGURAR:
+    DisplayFlashDigits(board->display, 0, 3, 200);
+    break;
+  case MOSTRANDO_HORA:
+    DisplayFlashDigits(board->display, 0, 0, 0);
+    break;
+  case AJUSTANDO_MINUTOS_ACTUAL:
+    DisplayFlashDigits(board->display, 2, 3, 200);
+    break;
+  case AJUSTANDO_HORAS_ACTUAL:
+    DisplayFlashDigits(board->display, 0, 1, 200);
+    break;
+  case AJUSTANDO_MINUTOS_ALARMA:
+    DisplayFlashDigits(board->display, 2, 3, 200);
+    DisplayToggleDot(board->display, 0);
+    DisplayToggleDot(board->display, 1);
+    DisplayToggleDot(board->display, 2);
+    DisplayToggleDot(board->display, 3);
+    break;
+  case AJUSTANDO_HORAS_ALARMA:
+    DisplayFlashDigits(board->display, 0, 1, 200);
+    DisplayToggleDot(board->display, 0);
+    DisplayToggleDot(board->display, 1);
+    DisplayToggleDot(board->display, 2);
+    DisplayToggleDot(board->display, 3);
+    break;
+  default:
+    break;
+  }
+}
+
+void IncrementarBCD(uint8_t numero[2], const uint8_t limite[2]) {
+  numero[1]++;
+  if (numero[1] > 9) {
+    numero[1] = 0;
+    numero[0]++;
+  }
+  if ((numero[0] > limite[0]) && (numero[1] > limite[1])) {
+    numero[1] = 0;
+    numero[0] = 0;
+  }
+}
+
+void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]) {
+  numero[1]--;
+  if (numero[1] > 9) {
+    numero[1] = 0;
+    numero[0]--;
+  }
+  if ((numero[0] > limite[0]) && (numero[1] > limite[1])) {
+    numero[1] = 0;
+    numero[0] = 0;
+  }
+}
 
 int main(void) {
 
