@@ -52,10 +52,19 @@
 
 /* === Private data type declarations
  * ========================================================== */
+typedef enum {
+  SIN_CONFIGURAR,
+  MOSTRANDO_HORA,
+  AJUSTANDO_MINUTOS_ACTUAL,
+  AJUSTANDO_HORAS_ACTUAL,
+  AJUSTANDO_MINUTOS_ALARMA,
+  AJUSTANDO_HORAS_ALARMA,
+} modo_t;
 
 /* === Private variable declarations
  * =========================================================== */
 static bool buzzer;
+static modo_t modo;
 
 /* === Private function declarations
  * =========================================================== */
@@ -71,11 +80,12 @@ void Alarma_ON(clock_puntero reloj) { buzzer = true; }
 
 /* === Public function implementation
  * ========================================================= */
+
 int main(void) {
 
   clock_puntero reloj = ClockCreate(100, Alarma_ON);
   board_puntero board = BoardCreate();
-  //  modo = SIN_CONFIGURAR;
+  modo = SIN_CONFIGURAR;
 
   // SisTick_Init(1000);
   // DisplayFlashDigits(board->display, 0, 3, 200);
