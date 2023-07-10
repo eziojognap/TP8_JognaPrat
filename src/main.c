@@ -43,7 +43,6 @@
 
 #include "ciaa.h"
 #include "digital.h"
-// #include "pantalla.h"
 #include "reloj.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -79,6 +78,8 @@ void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
 
 /* === Private variable definitions
  * ============================================================ */
+static const uint8_t LIMITE_HORAS[] = {2, 3};
+static const uint8_t LIMITE_MINUTOS[] = {5, 9};
 
 /* === Private function implementation
  * ========================================================= */
@@ -183,18 +184,18 @@ int main(void) {
 
     if (DigitalInputHasActivated(board->decrement) == true) {
       if (modo == AJUSTANDO_MINUTOS_ACTUAL) {
-        entrada[3] = entrada[3] - 1;
+        DecrementarBCD(&entrada[2], LIMITE_MINUTOS);
       } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
-        entrada[1] = entrada[1] - 1;
+        DecrementarBCD(entrada, LIMITE_HORAS);
       }
       DisplayWriteBCD(board->display, entrada, sizeof(entrada));
     }
 
     if (DigitalInputHasActivated(board->increment) == true) {
       if (modo == AJUSTANDO_MINUTOS_ACTUAL) {
-        entrada[3] = entrada[3] + 1;
+        IncrementarBCD(&entrada[2], LIMITE_MINUTOS);
       } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
-        entrada[1] = entrada[1] + 1;
+        IncrementarBCD(entrada, LIMITE_HORAS);
       }
       DisplayWriteBCD(board->display, entrada, sizeof(entrada));
     }
@@ -214,7 +215,7 @@ int main(void) {
 
       if (modo <= MOSTRANDO_HORA) {
         ClockGetTime(reloj, hora, sizeof(hora));
-        DisplayWriteBCD(board->display, hora, sezeof(hora));
+        DisplayWriteBCD(board->display, hora, sizeof(hora));
         if (current_value) {
           DisplayToggleDot(board->display, 1);
         }
