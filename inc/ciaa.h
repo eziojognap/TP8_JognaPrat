@@ -36,7 +36,7 @@ typedef struct board_estructura {
 
   display_puntero display;
 
-} const *const board_puntero;
+} const *board_puntero;
 
 /************************************* EXPORTED VARIABLES
  * *****************************************/
