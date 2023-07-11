@@ -160,13 +160,17 @@ void SegmentsInit(void) {
   Chip_SCU_PinMuxSet(SEGMENT_P_PORT, SEGMENT_P_PIN,
                      SCU_MODE_INBUFF_EN | SCU_MODE_INACT | SEGMENT_P_FUNC);
   Chip_GPIO_SetPinState(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_P_BIT, false);
-  Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_F_BIT, true);
+  Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_P_BIT, true);
 }
 
 void BuzzerInit(void) {
-  Chip_SCU_PinMuxSet(BUZZER_PORT, BUZZER_PIN,
-                     SCU_MODE_INBUFF_EN | SCU_MODE_INACT | BUZZER_FUNC);
-  board.buzzer = DigitalOutputCreate(BUZZER_GPIO, BUZZER_BIT);
+  // Chip_SCU_PinMuxSet(BUZZER_PORT, BUZZER_PIN,
+  //                    SCU_MODE_INBUFF_EN | SCU_MODE_INACT | BUZZER_FUNC);
+  // board.buzzer = DigitalOutputCreate(BUZZER_GPIO, BUZZER_BIT);
+  //     /********** LEDs 1 2 y 3 ********/
+  Chip_SCU_PinMuxSet(LED_1_PORT, LED_1_PIN,
+                     SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_1_FUNC);
+  board.buzzer = DigitalOutputCreate(LED_1_GPIO, LED_1_BIT);
 }
 
 void KeysInit(void) {
@@ -204,7 +208,7 @@ void ScreenTurnOff(void) {
 void SegmentsTurnOn(uint8_t segments) {
   Chip_GPIO_SetValue(LPC_GPIO_PORT, SEGMENTS_GPIO, (segments)&SEGMENTS_MASK);
   Chip_GPIO_SetPinState(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_P_BIT,
-                        (segments & SEGMENT_P_PIN));
+                        (segments & (1 << 7)));
 }
 
 void DigitTurnOn(uint8_t digit) {
