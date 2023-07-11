@@ -85,7 +85,7 @@ void DisplayWriteBCD(display_puntero display, uint8_t *number, uint8_t size) {
   for (int index = 0; index < size; index++) {
     if (index >= display->digits)
       break;
-    display->memory[index] = IMAGES[number[index]];
+    display->memory[index] = IMAGES[number[size - index - 1]];
   }
 }
 

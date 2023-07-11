@@ -187,9 +187,10 @@ bool DigitalInputHasChange(digital_input_puntero input) {
 bool DigitalInputHasActivated(digital_input_puntero input) {
   bool estado_actual = DigitalInputGetState(input);
   if (estado_actual == true && input->estado_anterior == false) {
+    input->estado_anterior = estado_actual;
     return true;
   } else {
+    input->estado_anterior = estado_actual;
     return false;
   }
-  input->estado_anterior = estado_actual;
 }

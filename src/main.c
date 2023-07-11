@@ -149,11 +149,11 @@ void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]) {
 int main(void) {
   uint8_t entrada[4];
 
-  clock_puntero reloj = ClockCreate(100, Alarma_ON);
+  reloj = ClockCreate(100, Alarma_ON);
   board = BoardCreate();
   // modo = SIN_CONFIGURAR;
 
-  SisTick_Init(1000);
+  SisTick_Init(20000);
   CambiarModo(SIN_CONFIGURAR);
 
   while (true) {
@@ -205,10 +205,10 @@ int main(void) {
     // DisplayRefresh(board->display);
   }
 }
-void Systick_Handler(void) {
+void SysTick_Handler(void) {
   static bool last_value = false;
   bool current_value;
-  uint8_t hora[6];
+  uint8_t hora[4];
 
   DisplayRefresh(board->display);
   current_value = ClockNewTick(reloj);
