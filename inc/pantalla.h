@@ -63,6 +63,10 @@ void DisplayFlashDigits(display_puntero display, uint8_t from, uint8_t to,
 
 void DisplayToggleDot(display_puntero display, uint8_t position);
 
+void DisplayDotOn(display_puntero display, uint8_t position);
+
+void DisplayDotOff(display_puntero display, uint8_t position);
+
 /************************************* FIN DEL COMPILADOR DE C++
  * **********************************/
 #ifdef __cplusplus /*Con esto se cierra la la def condicional para compilar en \

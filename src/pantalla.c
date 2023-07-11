@@ -121,5 +121,13 @@ void DisplayFlashDigits(display_puntero display, uint8_t from, uint8_t to,
 }
 
 void DisplayToggleDot(display_puntero display, uint8_t position) {
-  display->memory[position] ^= (1 << 7);
+  display->memory[3 - position] ^= (1 << 7);
+}
+
+void DisplayDotOn(display_puntero display, uint8_t position) {
+  display->memory[position] |= SEGMENT_P;
+}
+
+void DisplayDotOff(display_puntero display, uint8_t position) {
+  display->memory[3 - position] &= !SEGMENT_P;
 }

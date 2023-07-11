@@ -71,6 +71,7 @@ static clock_puntero reloj;
 /* === Private function declarations
  * =========================================================== */
 void Alarma_ON(clock_puntero reloj) { buzzer = true; };
+// void Alarma_OFF();
 void CambiarModo(modo_t valor);
 void IncrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
 void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
@@ -80,8 +81,8 @@ void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
 
 /* === Private variable definitions
  * ============================================================ */
-static const uint8_t LIMITE_HORAS[] = {2, 3};
-static const uint8_t LIMITE_MINUTOS[] = {5, 9};
+static const uint8_t LIMITE_HORAS[] = {2, 4};
+static const uint8_t LIMITE_MINUTOS[] = {6, 0};
 
 /* === Private function implementation
  * ========================================================= */
@@ -98,24 +99,20 @@ void CambiarModo(modo_t valor) {
     DisplayFlashDigits(board->display, 0, 0, 0);
     break;
   case AJUSTANDO_MINUTOS_ACTUAL:
-    DisplayFlashDigits(board->display, 2, 3, 200);
+    DisplayFlashDigits(board->display, 0, 1, 200);
     break;
   case AJUSTANDO_HORAS_ACTUAL:
-    DisplayFlashDigits(board->display, 0, 1, 200);
+    DisplayFlashDigits(board->display, 2, 3, 200);
     break;
   case AJUSTANDO_MINUTOS_ALARMA:
-    DisplayFlashDigits(board->display, 2, 3, 200);
-    DisplayToggleDot(board->display, 0);
-    DisplayToggleDot(board->display, 1);
-    DisplayToggleDot(board->display, 2);
-    DisplayToggleDot(board->display, 3);
+    DisplayFlashDigits(board->display, 0, 1, 200);
     break;
   case AJUSTANDO_HORAS_ALARMA:
-    DisplayFlashDigits(board->display, 0, 1, 200);
-    DisplayToggleDot(board->display, 0);
-    DisplayToggleDot(board->display, 1);
-    DisplayToggleDot(board->display, 2);
-    DisplayToggleDot(board->display, 3);
+    DisplayFlashDigits(board->display, 2, 3, 200);
+    DisplayDotOn(board->display, 0);
+    DisplayDotOn(board->display, 1);
+    DisplayDotOn(board->display, 2);
+    DisplayDotOn(board->display, 3);
     break;
   default:
     break;
@@ -124,11 +121,11 @@ void CambiarModo(modo_t valor) {
 
 void IncrementarBCD(uint8_t numero[2], const uint8_t limite[2]) {
   numero[1]++;
-  if (numero[1] > 9) {
+  if (numero[1] == 10) {
     numero[1] = 0;
     numero[0]++;
   }
-  if ((numero[0] > limite[0]) && (numero[1] > limite[1])) {
+  if ((numero[0] == limite[0]) && (numero[1] == limite[1])) {
     numero[1] = 0;
     numero[0] = 0;
   }
@@ -137,21 +134,37 @@ void IncrementarBCD(uint8_t numero[2], const uint8_t limite[2]) {
 void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]) {
   numero[1]--;
   if (numero[1] > 9) {
-    numero[1] = 0;
-    numero[0]--;
-  }
-  if ((numero[0] > limite[0]) && (numero[1] > limite[1])) {
-    numero[1] = 0;
-    numero[0] = 0;
+    numero[1] = 9;
+    if (numero[0] > 0) {
+      numero[0]--;
+    } else {
+      if (limite[0] == 2) {
+        numero[0] = limite[0];
+      } else {
+        numero[0] = limite[0] - 1;
+      }
+      if (limite[1] != 0) {
+        numero[1] = limite[1] - 1;
+      } else {
+        numero[1] = 9;
+      }
+    }
   }
 }
+
+// void Alarma_OFF() { DigitalOutputDeactivate(board->buzzer); }
+
+// void AlarmaSetOn(clock_puntero reloj) {
+//   if (Alarma_ON) {
+//     DigitalOutputActivate(board->buzzer);
+//   }
+// }
 
 int main(void) {
   uint8_t entrada[4];
 
   reloj = ClockCreate(100, Alarma_ON);
   board = BoardCreate();
-  // modo = SIN_CONFIGURAR;
 
   SisTick_Init(20000);
   CambiarModo(SIN_CONFIGURAR);
@@ -163,12 +176,21 @@ int main(void) {
       } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
         ClockSetTime(reloj, entrada, sizeof(entrada));
         CambiarModo(MOSTRANDO_HORA);
+      } else if (modo == AJUSTANDO_MINUTOS_ALARMA) {
+        CambiarModo(AJUSTANDO_HORAS_ALARMA);
+      } else if (modo == AJUSTANDO_HORAS_ALARMA) {
+        ClockSetUpAlarm(reloj, entrada, sizeof(entrada));
+        CambiarModo(MOSTRANDO_HORA);
+      } else if (buzzer == true) {
+        ClockSnoozeAlarm(reloj);
       }
     }
 
     if (DigitalInputHasActivated(board->cancel) == true) {
       if (ClockGetTime(reloj, entrada, sizeof(entrada))) {
         CambiarModo(MOSTRANDO_HORA);
+        // } else if (buzzer == true) {
+        //   Alarma_OFF();
       } else {
         CambiarModo(SIN_CONFIGURAR);
       }
@@ -181,13 +203,19 @@ int main(void) {
     }
 
     if (DigitalInputHasActivated(board->set_alarm) == true) {
-      // DisplayWriteBCD(board->display, (uint8_t[]){2, 2, 2, 2}, 4);
+      CambiarModo(AJUSTANDO_MINUTOS_ALARMA);
+      ClockGetAlarm(reloj, entrada, sizeof(entrada));
+      DisplayWriteBCD(board->display, entrada, sizeof(entrada));
     }
 
     if (DigitalInputHasActivated(board->decrement) == true) {
       if (modo == AJUSTANDO_MINUTOS_ACTUAL) {
         DecrementarBCD(&entrada[2], LIMITE_MINUTOS);
       } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
+        DecrementarBCD(entrada, LIMITE_HORAS);
+      } else if (modo == AJUSTANDO_MINUTOS_ALARMA) {
+        DecrementarBCD(&entrada[2], LIMITE_MINUTOS);
+      } else if (modo == AJUSTANDO_HORAS_ALARMA) {
         DecrementarBCD(entrada, LIMITE_HORAS);
       }
       DisplayWriteBCD(board->display, entrada, sizeof(entrada));
@@ -197,6 +225,10 @@ int main(void) {
       if (modo == AJUSTANDO_MINUTOS_ACTUAL) {
         IncrementarBCD(&entrada[2], LIMITE_MINUTOS);
       } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
+        IncrementarBCD(entrada, LIMITE_HORAS);
+      } else if (modo == AJUSTANDO_MINUTOS_ALARMA) {
+        IncrementarBCD(&entrada[2], LIMITE_MINUTOS);
+      } else if (modo == AJUSTANDO_HORAS_ALARMA) {
         IncrementarBCD(entrada, LIMITE_HORAS);
       }
       DisplayWriteBCD(board->display, entrada, sizeof(entrada));
@@ -212,6 +244,13 @@ void SysTick_Handler(void) {
 
   DisplayRefresh(board->display);
   current_value = ClockNewTick(reloj);
+
+  if (modo > AJUSTANDO_HORAS_ACTUAL) {
+    DisplayDotOn(board->display, 0);
+    DisplayDotOn(board->display, 1);
+    DisplayDotOn(board->display, 2);
+    DisplayDotOn(board->display, 3);
+  }
 
   if (current_value != last_value) {
     last_value = current_value;
