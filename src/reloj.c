@@ -56,10 +56,10 @@ bool ClockNewTick(clock_puntero clock) {
   ClockNewHour(clock);
   ClockTenHour(clock);
   ClockNewDay(clock);
-  if (clock->tick == (clock->tick_x_sec / 2)) {
+  if (clock->tick >= (clock->tick_x_sec / 2)) {
     luz = true;
-  }
-  if (clock->tick == clock->tick_x_sec) {
+  } else {
+    // if (clock->tick == clock->tick_x_sec) {
     luz = false;
   }
   return luz;

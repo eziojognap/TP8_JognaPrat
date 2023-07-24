@@ -159,7 +159,7 @@ void Alarma_ON(clock_puntero reloj) {
 int main(void) {
   uint8_t entrada[4];
 
-  reloj = ClockCreate(30, Alarma_ON);
+  reloj = ClockCreate(100, Alarma_ON);
   board = BoardCreate();
 
   SisTick_Init(1000);
@@ -271,7 +271,12 @@ void SysTick_Handler(void) {
       DisplayWriteBCD(board->display, hora, sizeof(hora));
 
       if (modo == MOSTRANDO_HORA) {
-        DisplayToggleDot(board->display, 1);
+        if (ClockNewTick(reloj)) {
+          DisplayDotOn(board->display, 1);
+        } else {
+          DisplayDotOff(board->display, 1);
+        }
+
         if (ClockAlarmState(reloj)) {
           DisplayDotOn(board->display, 3);
         }
