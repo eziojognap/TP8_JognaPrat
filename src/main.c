@@ -183,10 +183,8 @@ int main(void) {
           ClockSetUpAlarm(reloj, entrada, sizeof(entrada));
           CambiarModo(MOSTRANDO_HORA);
           ClockAlarmActivate(reloj);
-          DisplayDotOn(board->display, 3);
         } else if (modo == MOSTRANDO_HORA) {
           ClockAlarmActivate(reloj);
-          DisplayDotOn(board->display, 3);
         }
       }
     }
@@ -198,7 +196,6 @@ int main(void) {
       } else {
         if (modo == MOSTRANDO_HORA) {
           ClockAlarmDeactivate(reloj);
-          DisplayDotOff(board->display, 3);
         } else if (ClockGetTime(reloj, entrada, sizeof(entrada))) {
           CambiarModo(MOSTRANDO_HORA);
         } else {
@@ -279,6 +276,8 @@ void SysTick_Handler(void) {
 
         if (ClockAlarmState(reloj)) {
           DisplayDotOn(board->display, 3);
+        } else {
+          DisplayDotOff(board->display, 3);
         }
       }
     }

@@ -167,6 +167,7 @@ void ClockSnoozeAlarm(clock_puntero clock) {
 }
 
 void ClockAlarmDeactivate(clock_puntero clock) {
+  clock->alarma->valida = false;
   clock->alarma->activada = false;
 }
 
