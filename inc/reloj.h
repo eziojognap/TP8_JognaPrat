@@ -29,3 +29,4 @@ void ClockActivateSnoozeAlarm(clock_puntero clock);
 void ClockSnoozeAlarm(clock_puntero clock);
 void ClockAlarmDeactivate(clock_puntero clock);
 void ClockAlarmActivate(clock_puntero clock);
+bool ClockAlarmState(clock_puntero clock);

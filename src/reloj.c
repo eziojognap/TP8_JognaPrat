@@ -167,7 +167,9 @@ void ClockSnoozeAlarm(clock_puntero clock) {
 }
 
 void ClockAlarmDeactivate(clock_puntero clock) {
-  clock->alarma->valida = false;
+  clock->alarma->activada = false;
 }
 
-void ClockAlarmActivate(clock_puntero clock) { clock->alarma->valida = true; }
+void ClockAlarmActivate(clock_puntero clock) { clock->alarma->activada = true; }
+
+bool ClockAlarmState(clock_puntero clock) { return clock->alarma->activada; }

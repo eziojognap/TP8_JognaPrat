@@ -184,6 +184,9 @@ int main(void) {
           CambiarModo(MOSTRANDO_HORA);
           ClockAlarmActivate(reloj);
           DisplayDotOn(board->display, 3);
+        } else if (modo == MOSTRANDO_HORA) {
+          ClockAlarmActivate(reloj);
+          DisplayDotOn(board->display, 3);
         }
       }
     }
@@ -269,6 +272,9 @@ void SysTick_Handler(void) {
 
       if (modo == MOSTRANDO_HORA) {
         DisplayToggleDot(board->display, 1);
+        if (ClockAlarmState(reloj)) {
+          DisplayDotOn(board->display, 3);
+        }
       }
     }
   }
