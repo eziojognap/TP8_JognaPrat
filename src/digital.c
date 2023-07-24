@@ -194,15 +194,3 @@ bool DigitalInputHasActivated(digital_input_puntero input) {
     return false;
   }
 }
-
-// int DigitalInputHold(digital_input_puntero input, uint8_t cuenta_max) {
-//   bool estado_actual = DigitalInputGetState(input);
-//   if (estado_actual == true && input->estado_anterior == true) {
-//     input->estado_anterior = estado_actual;
-//     c
-//     return true;
-//   } else {
-//     input->estado_anterior = estado_actual;
-//     return false;
-//   }
-// }

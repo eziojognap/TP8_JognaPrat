@@ -125,9 +125,9 @@ void DisplayToggleDot(display_puntero display, uint8_t position) {
 }
 
 void DisplayDotOn(display_puntero display, uint8_t position) {
-  display->memory[position] |= SEGMENT_P;
+  display->memory[3 - position] |= SEGMENT_P;
 }
 
 void DisplayDotOff(display_puntero display, uint8_t position) {
-  display->memory[3 - position] &= !SEGMENT_P;
+  display->memory[3 - position] & SEGMENT_P;
 }
