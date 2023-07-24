@@ -70,8 +70,7 @@ static clock_puntero reloj;
 
 /* === Private function declarations
  * =========================================================== */
-void Alarma_ON(clock_puntero reloj) { buzzer = true; };
-// void Alarma_OFF();
+void Alarma_ON(clock_puntero reloj);
 void CambiarModo(modo_t valor);
 void IncrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
 void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
@@ -152,47 +151,56 @@ void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]) {
   }
 }
 
-// void Alarma_OFF() { DigitalOutputDeactivate(board->buzzer); }
-
-// void AlarmaSetOn(clock_puntero reloj) {
-//   if (Alarma_ON) {
-//     DigitalOutputActivate(board->buzzer);
-//   }
-// }
+void Alarma_ON(clock_puntero reloj) {
+  DigitalOutputActivate(board->buzzer);
+  buzzer = true;
+}
 
 int main(void) {
   uint8_t entrada[4];
 
-  reloj = ClockCreate(100, Alarma_ON);
+  reloj = ClockCreate(30, Alarma_ON);
   board = BoardCreate();
 
-  SisTick_Init(20000);
+  SisTick_Init(1000);
   CambiarModo(SIN_CONFIGURAR);
 
   while (true) {
     if (DigitalInputHasActivated(board->accept) == true) {
-      if (modo == AJUSTANDO_MINUTOS_ACTUAL) {
-        CambiarModo(AJUSTANDO_HORAS_ACTUAL);
-      } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
-        ClockSetTime(reloj, entrada, sizeof(entrada));
-        CambiarModo(MOSTRANDO_HORA);
-      } else if (modo == AJUSTANDO_MINUTOS_ALARMA) {
-        CambiarModo(AJUSTANDO_HORAS_ALARMA);
-      } else if (modo == AJUSTANDO_HORAS_ALARMA) {
-        ClockSetUpAlarm(reloj, entrada, sizeof(entrada));
-        CambiarModo(MOSTRANDO_HORA);
-      } else if (buzzer == true) {
-        ClockSnoozeAlarm(reloj);
+      if (buzzer == true) {
+        DigitalOutputDeactivate(board->buzzer);
+        ClockActivateSnoozeAlarm(reloj);
+        buzzer = false;
+      } else {
+        if (modo == AJUSTANDO_MINUTOS_ACTUAL) {
+          CambiarModo(AJUSTANDO_HORAS_ACTUAL);
+        } else if (modo == AJUSTANDO_HORAS_ACTUAL) {
+          ClockSetTime(reloj, entrada, sizeof(entrada));
+          CambiarModo(MOSTRANDO_HORA);
+        } else if (modo == AJUSTANDO_MINUTOS_ALARMA) {
+          CambiarModo(AJUSTANDO_HORAS_ALARMA);
+        } else if (modo == AJUSTANDO_HORAS_ALARMA) {
+          ClockSetUpAlarm(reloj, entrada, sizeof(entrada));
+          CambiarModo(MOSTRANDO_HORA);
+          ClockAlarmActivate(reloj);
+          DisplayDotOn(board->display, 3);
+        }
       }
     }
 
     if (DigitalInputHasActivated(board->cancel) == true) {
-      if (ClockGetTime(reloj, entrada, sizeof(entrada))) {
-        CambiarModo(MOSTRANDO_HORA);
-        // } else if (buzzer == true) {
-        //   Alarma_OFF();
+      if (buzzer == true) {
+        DigitalOutputDeactivate(board->buzzer);
+        buzzer = false;
       } else {
-        CambiarModo(SIN_CONFIGURAR);
+        if (modo == MOSTRANDO_HORA) {
+          ClockAlarmDeactivate(reloj);
+          DisplayDotOff(board->display, 3);
+        } else if (ClockGetTime(reloj, entrada, sizeof(entrada))) {
+          CambiarModo(MOSTRANDO_HORA);
+        } else {
+          CambiarModo(SIN_CONFIGURAR);
+        }
       }
     }
 
@@ -258,7 +266,8 @@ void SysTick_Handler(void) {
     if (modo <= MOSTRANDO_HORA) {
       ClockGetTime(reloj, hora, sizeof(hora));
       DisplayWriteBCD(board->display, hora, sizeof(hora));
-      if (current_value) {
+
+      if (modo == MOSTRANDO_HORA) {
         DisplayToggleDot(board->display, 1);
       }
     }

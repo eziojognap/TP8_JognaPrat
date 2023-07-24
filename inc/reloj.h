@@ -27,3 +27,5 @@ bool ClockSetUpAlarm(clock_puntero reloj, const uint8_t alarma[], int size);
 
 void ClockActivateSnoozeAlarm(clock_puntero clock);
 void ClockSnoozeAlarm(clock_puntero clock);
+void ClockAlarmDeactivate(clock_puntero clock);
+void ClockAlarmActivate(clock_puntero clock);

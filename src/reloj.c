@@ -140,7 +140,7 @@ bool ClockGetAlarm(clock_puntero reloj, uint8_t *hora, int size) {
 }
 
 void ClockControlAlarm(clock_puntero clock) {
-  if (clock->alarma->activada == true) { // si esta habilitada la alarma
+  if (clock->alarma->valida == true) { // si esta habilitada la alarma
     if (memcmp(clock->hora_actual, clock->alarma->alarma_actual,
                sizeof(clock->hora_actual)) == 0) {
       clock->alarma->activar_alarma_f(clock);
@@ -165,3 +165,9 @@ void ClockSnoozeAlarm(clock_puntero clock) {
     }
   }
 }
+
+void ClockAlarmDeactivate(clock_puntero clock) {
+  clock->alarma->valida = false;
+}
+
+void ClockAlarmActivate(clock_puntero clock) { clock->alarma->valida = true; }
