@@ -41,9 +41,11 @@
 /* === Headers files inclusions
  * =============================================================== */
 
+#include "FreeRTOS.h"
 #include "ciaa.h"
 #include "digital.h"
 #include "reloj.h"
+#include "task.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -74,6 +76,10 @@ void Alarma_ON(clock_puntero reloj);
 void CambiarModo(modo_t valor);
 void IncrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
 void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
+
+static void Refresh_Task(void *object);
+static void Main_Task(void *object);
+static void SysTick_Handler_Task(void *object);
 
 /* === Public variable definitions
  * ============================================================= */
@@ -156,14 +162,15 @@ void Alarma_ON(clock_puntero reloj) {
   buzzer = true;
 }
 
-int main(void) {
+static void Refresh_Task(void *object) {
+  while (true) {
+    DisplayRefresh(board->display);
+    vTaskDelay(pdMS_TO_TICKS(1));
+  }
+}
+
+static void Main_Task(void *object) {
   uint8_t entrada[4];
-
-  reloj = ClockCreate(100, Alarma_ON);
-  board = BoardCreate();
-
-  SisTick_Init(1000);
-  CambiarModo(SIN_CONFIGURAR);
 
   while (true) {
     if (DigitalInputHasActivated(board->accept) == true) {
@@ -241,49 +248,67 @@ int main(void) {
       }
       DisplayWriteBCD(board->display, entrada, sizeof(entrada));
     }
-
-    // DisplayRefresh(board->display);
+    vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
-void SysTick_Handler(void) {
+
+static void SysTick_Handler_Task(void *object) {
   static bool last_value = false;
   bool current_value;
   uint8_t hora[4];
 
-  DisplayRefresh(board->display);
-  current_value = ClockNewTick(reloj);
+  while (true) {
+    current_value = ClockNewTick(reloj);
 
-  if (modo > AJUSTANDO_HORAS_ACTUAL) {
-    DisplayDotOn(board->display, 0);
-    DisplayDotOn(board->display, 1);
-    DisplayDotOn(board->display, 2);
-    DisplayDotOn(board->display, 3);
-  }
+    if (modo > AJUSTANDO_HORAS_ACTUAL) {
+      DisplayDotOn(board->display, 0);
+      DisplayDotOn(board->display, 1);
+      DisplayDotOn(board->display, 2);
+      DisplayDotOn(board->display, 3);
+    }
 
-  if (current_value != last_value) {
-    last_value = current_value;
+    if (current_value != last_value) {
+      last_value = current_value;
 
-    if (modo <= MOSTRANDO_HORA) {
-      ClockGetTime(reloj, hora, sizeof(hora));
-      DisplayWriteBCD(board->display, hora, sizeof(hora));
+      if (modo <= MOSTRANDO_HORA) {
+        ClockGetTime(reloj, hora, sizeof(hora));
+        DisplayWriteBCD(board->display, hora, sizeof(hora));
 
-      if (modo == MOSTRANDO_HORA) {
-        if (ClockNewTick(reloj)) {
-          DisplayDotOn(board->display, 1);
-        } else {
-          DisplayDotOff(board->display, 1);
-        }
+        if (modo == MOSTRANDO_HORA) {
+          if (ClockNewTick(reloj)) {
+            DisplayDotOn(board->display, 1);
+          } else {
+            DisplayDotOff(board->display, 1);
+          }
 
-        if (ClockAlarmState(reloj)) {
-          DisplayDotOn(board->display, 3);
-        } else {
-          DisplayDotOff(board->display, 3);
+          if (ClockAlarmState(reloj)) {
+            DisplayDotOn(board->display, 3);
+          } else {
+            DisplayDotOff(board->display, 3);
+          }
         }
       }
     }
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
+int main(void) {
+
+  reloj = ClockCreate(100, Alarma_ON);
+  board = BoardCreate();
+
+  SisTick_Init(1000);
+  CambiarModo(SIN_CONFIGURAR);
+
+  xTaskCreate(Refresh_Task, "Refresh_Task", 256, NULL, tskIDLE_PRIORITY + 1,
+              NULL);
+  xTaskCreate(Main_Task, "Main_Task", 256, NULL, tskIDLE_PRIORITY + 3, NULL);
+  xTaskCreate(SysTick_Handler_Task, "SysTick_Handler_Task", 256, NULL,
+              tskIDLE_PRIORITY + 1, NULL);
+
+  vTaskStartScheduler();
+}
 /* === End of documentation
  * ==================================================================== */
 
