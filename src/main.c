@@ -89,6 +89,10 @@ static void SysTick_Handler_Task(void *object);
 static const uint8_t LIMITE_HORAS[] = {2, 4};
 static const uint8_t LIMITE_MINUTOS[] = {6, 0};
 
+static bool HoldButton = false;
+static TickType_t HoldButtonTime = 0;
+static const TickType_t HoldDelay = 3000;
+
 /* === Private function implementation
  * ========================================================= */
 
@@ -111,6 +115,7 @@ void CambiarModo(modo_t valor) {
     break;
   case AJUSTANDO_MINUTOS_ALARMA:
     DisplayFlashDigits(board->display, 0, 1, 200);
+    HoldButton = false;
     break;
   case AJUSTANDO_HORAS_ALARMA:
     DisplayFlashDigits(board->display, 2, 3, 200);
@@ -118,6 +123,7 @@ void CambiarModo(modo_t valor) {
     DisplayDotOn(board->display, 1);
     DisplayDotOn(board->display, 2);
     DisplayDotOn(board->display, 3);
+    HoldButton = false;
     break;
   default:
     break;
@@ -218,9 +224,17 @@ static void Main_Task(void *object) {
     }
 
     if (DigitalInputHasActivated(board->set_alarm) == true) {
-      CambiarModo(AJUSTANDO_MINUTOS_ALARMA);
-      ClockGetAlarm(reloj, entrada, sizeof(entrada));
-      DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+      if (HoldButton == false) {
+        HoldButton = true;
+        HoldButtonTime = xTaskGetTickCount();
+      } else {
+        HoldButton = false;
+      }
+      if (HoldButton && ((xTaskGetTickCount() - HoldButtonTime) >= HoldDelay)) {
+        CambiarModo(AJUSTANDO_MINUTOS_ALARMA);
+        ClockGetAlarm(reloj, entrada, sizeof(entrada));
+        DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+      }
     }
 
     if (DigitalInputHasActivated(board->decrement) == true) {
