@@ -89,9 +89,11 @@ static void SysTick_Handler_Task(void *object);
 static const uint8_t LIMITE_HORAS[] = {2, 4};
 static const uint8_t LIMITE_MINUTOS[] = {6, 0};
 
-static bool HoldButton = false;
-static TickType_t HoldButtonTime = 0;
-static const TickType_t HoldDelay = 3000;
+static bool HoldButton_SetAlarm = false;
+static TickType_t HoldButtonTime_SetAlarm = 0;
+static bool HoldButton_SetTime = false;
+static TickType_t HoldButtonTime_SetTime = 0;
+static const TickType_t HoldDelay = 2000;
 
 /* === Private function implementation
  * ========================================================= */
@@ -109,13 +111,15 @@ void CambiarModo(modo_t valor) {
     break;
   case AJUSTANDO_MINUTOS_ACTUAL:
     DisplayFlashDigits(board->display, 0, 1, 200);
+    HoldButton_SetTime = false;
     break;
   case AJUSTANDO_HORAS_ACTUAL:
     DisplayFlashDigits(board->display, 2, 3, 200);
+    HoldButton_SetTime = false;
     break;
   case AJUSTANDO_MINUTOS_ALARMA:
     DisplayFlashDigits(board->display, 0, 1, 200);
-    HoldButton = false;
+    HoldButton_SetAlarm = false;
     break;
   case AJUSTANDO_HORAS_ALARMA:
     DisplayFlashDigits(board->display, 2, 3, 200);
@@ -123,7 +127,7 @@ void CambiarModo(modo_t valor) {
     DisplayDotOn(board->display, 1);
     DisplayDotOn(board->display, 2);
     DisplayDotOn(board->display, 3);
-    HoldButton = false;
+    HoldButton_SetAlarm = false;
     break;
   default:
     break;
@@ -217,24 +221,42 @@ static void Main_Task(void *object) {
       }
     }
 
-    if (DigitalInputHasActivated(board->set_time) == true) {
-      CambiarModo(AJUSTANDO_MINUTOS_ACTUAL);
-      ClockGetTime(reloj, entrada, sizeof(entrada));
-      DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+    if (modo == SIN_CONFIGURAR) {
+      if (DigitalInputHasActivated(board->set_time) == true) {
+        CambiarModo(AJUSTANDO_MINUTOS_ACTUAL);
+        ClockGetTime(reloj, entrada, sizeof(entrada));
+        DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+      }
     }
 
-    if (DigitalInputHasActivated(board->set_alarm) == true) {
-      if (HoldButton == false) {
-        HoldButton = true;
-        HoldButtonTime = xTaskGetTickCount();
-      } else {
-        HoldButton = false;
+    if (DigitalInputHasBeenHold(board->set_time) == true) {
+      if (HoldButton_SetTime == false) {
+        HoldButton_SetTime = true;
+        HoldButtonTime_SetTime = xTaskGetTickCount();
       }
-      if (HoldButton && ((xTaskGetTickCount() - HoldButtonTime) >= HoldDelay)) {
+      if (HoldButton_SetTime &&
+          ((xTaskGetTickCount() - HoldButtonTime_SetTime) >= HoldDelay)) {
+        CambiarModo(AJUSTANDO_MINUTOS_ACTUAL);
+        ClockGetTime(reloj, entrada, sizeof(entrada));
+        DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+      }
+    } else {
+      HoldButton_SetTime = false;
+    }
+
+    if (DigitalInputHasBeenHold(board->set_alarm) == true) {
+      if (HoldButton_SetAlarm == false) {
+        HoldButton_SetAlarm = true;
+        HoldButtonTime_SetAlarm = xTaskGetTickCount();
+      }
+      if (HoldButton_SetAlarm &&
+          ((xTaskGetTickCount() - HoldButtonTime_SetAlarm) >= HoldDelay)) {
         CambiarModo(AJUSTANDO_MINUTOS_ALARMA);
         ClockGetAlarm(reloj, entrada, sizeof(entrada));
         DisplayWriteBCD(board->display, entrada, sizeof(entrada));
       }
+    } else {
+      HoldButton_SetAlarm = false;
     }
 
     if (DigitalInputHasActivated(board->decrement) == true) {
@@ -288,12 +310,13 @@ static void SysTick_Handler_Task(void *object) {
         ClockGetTime(reloj, hora, sizeof(hora));
         DisplayWriteBCD(board->display, hora, sizeof(hora));
 
+        if (ClockNewTick(reloj)) {
+          DisplayDotOn(board->display, 1);
+        } else {
+          DisplayDotOff(board->display, 1);
+        }
+
         if (modo == MOSTRANDO_HORA) {
-          if (ClockNewTick(reloj)) {
-            DisplayDotOn(board->display, 1);
-          } else {
-            DisplayDotOff(board->display, 1);
-          }
 
           if (ClockAlarmState(reloj)) {
             DisplayDotOn(board->display, 3);

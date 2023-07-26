@@ -69,6 +69,8 @@ bool DigitalInputHasChanged(digital_input_puntero input);
 
 bool DigitalInputHasActivated(digital_input_puntero input);
 
+bool DigitalInputHasBeenHold(digital_input_puntero input);
+
 #ifdef __cplusplus /*Con esto se cierra la la def condicional para compilar en \
                       c codigo que es de c++*/
 }
