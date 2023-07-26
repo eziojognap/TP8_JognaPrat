@@ -83,6 +83,12 @@ void DecrementarBCD(uint8_t numero[2], const uint8_t limite[2]);
 static const uint8_t LIMITE_HORAS[] = {2, 4};
 static const uint8_t LIMITE_MINUTOS[] = {6, 0};
 
+static bool HoldButton_SetAlarm = false;
+static uint32_t HoldButtonTime_SetAlarm = 0;
+static bool HoldButton_SetTime = false;
+static uint32_t HoldButtonTime_SetTime = 0;
+static const uint32_t HoldDelay = 2000;
+
 /* === Private function implementation
  * ========================================================= */
 
@@ -99,12 +105,15 @@ void CambiarModo(modo_t valor) {
     break;
   case AJUSTANDO_MINUTOS_ACTUAL:
     DisplayFlashDigits(board->display, 0, 1, 200);
+    HoldButton_SetTime = false;
     break;
   case AJUSTANDO_HORAS_ACTUAL:
     DisplayFlashDigits(board->display, 2, 3, 200);
+    HoldButton_SetTime = false;
     break;
   case AJUSTANDO_MINUTOS_ALARMA:
     DisplayFlashDigits(board->display, 0, 1, 200);
+    HoldButton_SetAlarm = false;
     break;
   case AJUSTANDO_HORAS_ALARMA:
     DisplayFlashDigits(board->display, 2, 3, 200);
@@ -112,6 +121,7 @@ void CambiarModo(modo_t valor) {
     DisplayDotOn(board->display, 1);
     DisplayDotOn(board->display, 2);
     DisplayDotOn(board->display, 3);
+    HoldButton_SetAlarm = false;
     break;
   default:
     break;
@@ -204,16 +214,42 @@ int main(void) {
       }
     }
 
-    if (DigitalInputHasActivated(board->set_time) == true) {
-      CambiarModo(AJUSTANDO_MINUTOS_ACTUAL);
-      ClockGetTime(reloj, entrada, sizeof(entrada));
-      DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+    if (modo == SIN_CONFIGURAR) {
+      if (DigitalInputHasActivated(board->set_time) == true) {
+        CambiarModo(AJUSTANDO_MINUTOS_ACTUAL);
+        ClockGetTime(reloj, entrada, sizeof(entrada));
+        DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+      }
     }
 
-    if (DigitalInputHasActivated(board->set_alarm) == true) {
-      CambiarModo(AJUSTANDO_MINUTOS_ALARMA);
-      ClockGetAlarm(reloj, entrada, sizeof(entrada));
-      DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+    if (DigitalInputHasBeenHold(board->set_time) == true) {
+      if (HoldButton_SetTime == false) {
+        HoldButton_SetTime = true;
+        HoldButtonTime_SetTime = SysTick->VAL;
+      }
+      if (HoldButton_SetTime &&
+          ((SysTick->VAL - HoldButtonTime_SetTime) >= HoldDelay)) {
+        CambiarModo(AJUSTANDO_MINUTOS_ACTUAL);
+        ClockGetTime(reloj, entrada, sizeof(entrada));
+        DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+      }
+    } else {
+      HoldButton_SetTime = false;
+    }
+
+    if (DigitalInputHasBeenHold(board->set_alarm) == true) {
+      if (HoldButton_SetAlarm == false) {
+        HoldButton_SetAlarm = true;
+        HoldButtonTime_SetAlarm = SysTick->VAL;
+      }
+      if (HoldButton_SetAlarm &&
+          ((SysTick->VAL - HoldButtonTime_SetAlarm) >= HoldDelay)) {
+        CambiarModo(AJUSTANDO_MINUTOS_ALARMA);
+        ClockGetAlarm(reloj, entrada, sizeof(entrada));
+        DisplayWriteBCD(board->display, entrada, sizeof(entrada));
+      }
+    } else {
+      HoldButton_SetAlarm = false;
     }
 
     if (DigitalInputHasActivated(board->decrement) == true) {
@@ -267,12 +303,13 @@ void SysTick_Handler(void) {
       ClockGetTime(reloj, hora, sizeof(hora));
       DisplayWriteBCD(board->display, hora, sizeof(hora));
 
+      if (ClockNewTick(reloj)) {
+        DisplayDotOn(board->display, 1);
+      } else {
+        DisplayDotOff(board->display, 1);
+      }
+
       if (modo == MOSTRANDO_HORA) {
-        if (ClockNewTick(reloj)) {
-          DisplayDotOn(board->display, 1);
-        } else {
-          DisplayDotOff(board->display, 1);
-        }
 
         if (ClockAlarmState(reloj)) {
           DisplayDotOn(board->display, 3);
